@@ -51,7 +51,10 @@ public class Main {
                     if (extractedFilesArray == null) throw new RuntimeException("Couldn't extract content of '" + pack + "'!");
                     final List<File> extractedFiles = List.of(extractedFilesArray);
 
-                    outputZip.addFiles(extractedFiles, new ZipParameters());
+                    for(File file : extractedFiles) {
+                        if (file.isDirectory()) outputZip.addFolder(file, new ZipParameters());
+                        else outputZip.addFile(file, new ZipParameters());
+                    }
 
                 } catch (IOException e) {
                     throw new RuntimeException(e);
