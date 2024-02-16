@@ -22,7 +22,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         // Check if input directory exists
-        if (!INPUT_DIR.toFile().exists()) throw new RuntimeException("Input directory '" + INPUT_DIR + "' doesn't exist!");
+        if (!INPUT_DIR.toFile().exists()) createDir(INPUT_DIR.toFile());
         if (!INPUT_DIR.toFile().isDirectory()) throw new RuntimeException("Input directory '" + INPUT_DIR + "' is a file!");
 
         // Gather resource packs in correct order (1-mypack.zip before 20-otherpack.zip)
