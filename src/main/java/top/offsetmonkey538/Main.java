@@ -1,8 +1,8 @@
 package top.offsetmonkey538;
 
 import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +23,8 @@ public class Main {
     public static void main(String[] args) throws IOException {
         // Check if input directory exists
         if (!INPUT_DIR.toFile().exists()) createDir(INPUT_DIR.toFile());
-        if (!INPUT_DIR.toFile().isDirectory()) throw new RuntimeException("Input directory '" + INPUT_DIR + "' is a file!");
+        if (!INPUT_DIR.toFile().isDirectory())
+            throw new RuntimeException("Input directory '" + INPUT_DIR + "' is a file!");
 
         // Gather resource packs in correct order (1-mypack.zip before 20-otherpack.zip)
         final File[] sourcePacksArray = INPUT_DIR.toFile().listFiles();
@@ -32,34 +33,37 @@ public class Main {
         final List<File> sourcePacks = Stream.of(sourcePacksArray)
                 .filter(file -> !file.isDirectory())
                 .filter(file -> file.getName().endsWith(".zip"))
-                .sorted(Comparator.comparingInt(Main::extractPriorityFromFile).reversed())
+                .sorted(Comparator.comparingInt(Main::extractPriorityFromFile).reversed()) // Reverse as priority 0 is most important and should be applied last.
                 .toList();
 
-        // Create tmp directory and extract source packs
+        // Create tmp directory
         final Path tmpDir = Files.createTempDirectory("minecraft-resourcepack-merger");
         final File inputExtractDir = createDir(tmpDir.resolve("input").toFile());
+        final File outputDir = createDir(tmpDir.resolve("output").toFile());
+
+        // Extract all source packs
+        for (File pack : sourcePacks) {
+            try (final ZipFile inputZip = new ZipFile(pack)) {
+                final File extractedPack = createDir(new File(inputExtractDir, pack.getName()));
+
+                inputZip.extractAll(extractedPack.getAbsolutePath());
+
+                FileUtils.copyDirectory(extractedPack, outputDir);
+            }
+        }
+
+        // Add source packs to output zip
         final File outputPack = createNewFile(new File(WORKING_DIR, "pack.zip"));
 
         try (final ZipFile outputZip = new ZipFile(outputPack)) {
-            sourcePacks.forEach(pack -> {
-                try (final ZipFile inputZip = new ZipFile(pack)) {
-                    final File extractedPack = createDir(new File(inputExtractDir, pack.getName()));
+            final File[] outputFiles = outputDir.listFiles();
 
-                    inputZip.extractAll(extractedPack.getAbsolutePath());
+            if (outputFiles == null) throw new IllegalStateException("Output files empty???");
 
-                    final File[] extractedFilesArray = extractedPack.listFiles();
-                    if (extractedFilesArray == null) throw new RuntimeException("Couldn't extract content of '" + pack + "'!");
-                    final List<File> extractedFiles = List.of(extractedFilesArray);
-
-                    for(File file : extractedFiles) {
-                        if (file.isDirectory()) outputZip.addFolder(file, new ZipParameters());
-                        else outputZip.addFile(file, new ZipParameters());
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            for (File file : outputFiles) {
+                if (file.isDirectory()) outputZip.addFolder(file);
+                else outputZip.addFile(file);
+            }
         }
 
         // Get the SHA-1 of the output pack and display it in the terminal.
