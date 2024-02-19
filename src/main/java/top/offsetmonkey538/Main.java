@@ -26,14 +26,14 @@ public class Main {
         if (!INPUT_DIR.toFile().isDirectory())
             throw new RuntimeException("Input directory '" + INPUT_DIR + "' is a file!");
 
-        // Gather resource packs in correct order (1-mypack.zip before 20-otherpack.zip)
+        // Gather resource packs in correct order
         final File[] sourcePacksArray = INPUT_DIR.toFile().listFiles();
         if (sourcePacksArray == null) throw new RuntimeException("Input directory '" + INPUT_DIR + "' is empty!");
 
         final List<File> sourcePacks = Stream.of(sourcePacksArray)
                 .filter(file -> !file.isDirectory())
                 .filter(file -> file.getName().endsWith(".zip"))
-                .sorted(Comparator.comparingInt(Main::extractPriorityFromFile).reversed()) // Reverse as priority 0 is most important and should be applied last.
+                .sorted(Comparator.comparingInt(Main::extractPriorityFromFile))
                 .toList();
 
         // Create tmp directory
