@@ -52,6 +52,19 @@ public class Main {
             }
         }
 
+        // Generate file with source pack names
+        final Path inputPacksFilePath = outputDir.toPath().resolve("content.txt");
+        createNewFile(inputPacksFilePath.toFile());
+
+        StringBuilder fileContent = new StringBuilder("This pack was put together using https://github.com/OffsetMonkey538/Minecraft-Resourcepack-Merger from the following packs:\n\n");
+
+        for (File pack : sourcePacks) {
+            fileContent.append("- ").append(nameWithoutPriorityString(pack)).append("\n");
+        }
+
+        Files.writeString(inputPacksFilePath, fileContent);
+
+
         // Add source packs to output zip
         final File outputPack = createNewFile(new File(WORKING_DIR, "pack.zip"));
 
@@ -78,6 +91,15 @@ public class Main {
         if (!matcher.find()) throw new RuntimeException("File '" + file + "' doesn't start with priority!");
 
         return Integer.parseInt(matcher.group().replace('-', ' ').strip());
+    }
+    public static String nameWithoutPriorityString(File file) {
+        final String filename = file.getName();
+
+        final Matcher matcher = INPUT_NAME_PATTERN.matcher(filename);
+
+        if (!matcher.find()) throw new RuntimeException("File '" + file + "' doesn't start with priority!");
+
+        return filename.replace(matcher.group(), "").strip();
     }
 
     public static File createDir(File file) {
